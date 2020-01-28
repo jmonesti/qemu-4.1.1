@@ -37,8 +37,45 @@
 #include "chardev/char.h"
 #include "exec/address-spaces.h"
 
+static const struct MemmapEntry {
+    hwaddr base;
+    hwaddr size;
+} rv_customsoc_memmap[] = {
+    [RV_CUSTOMSOC_RAM]   = { 0x00000000,      0x400000 }, /*    4mb */
+};
+
 static void riscv_custom_board_init(MachineState *machine)
 {
+    const struct MemmapEntry *memmap = rv_customsoc_memmap;
+
+    RISCVCustomSOCState *s = g_new0(RISCVCustomSOCState, 1);
+    MemoryRegion *system_memory = get_system_memory();
+    MemoryRegion *ram = g_new(MemoryRegion, 1);
+    unsigned int smp_cpus = machine->smp.cpus;
+
+    /* Initialize SOC */
+    object_initialize_child(OBJECT(machine), "soc", &s->soc, sizeof(s->soc),
+                            TYPE_RISCV_HART_ARRAY, &error_abort, NULL);
+    object_property_set_str(OBJECT(&s->soc), machine->cpu_type, "cpu-type",
+                            &error_abort);
+    object_property_set_int(OBJECT(&s->soc), smp_cpus, "num-harts",
+                            &error_abort);
+    object_property_set_bool(OBJECT(&s->soc), true, "realized",
+                            &error_abort);
+
+    /* register system memory */
+    memory_region_init_ram(ram, NULL, "riscv_custom_board.ram",
+                           memmap[RV_CUSTOMSOC_RAM].size, &error_fatal);
+    memory_region_add_subregion(system_memory, memmap[RV_CUSTOMSOC_RAM].base,
+        ram);
+
+    if (machine->kernel_filename) {
+        /*uint64_t kernel_entry =*/ riscv_load_kernel(machine->kernel_filename);
+
+        if (machine->initrd_filename) {
+	    /* ignored */
+        }
+    }
 }
 
 static void riscv_custom_board_machine_init(MachineClass *mc)

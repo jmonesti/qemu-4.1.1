@@ -23,6 +23,18 @@
 #ifndef HW_RISCV_CUSTOM_SOC_H
 #define HW_RISCV_CUSTOM_SOC_H
 
+typedef struct {
+    /*< private >*/
+    SysBusDevice parent_obj;
+
+    /*< public >*/
+    RISCVHartArrayState soc;
+} RISCVCustomSOCState;
+
+enum {
+    RV_CUSTOMSOC_RAM,
+};
+
 #if defined(TARGET_RISCV32)
 #define RV_CUSTOM_CPU TYPE_RISCV_CPU_CUSTOM32
 #elif defined(TARGET_RISCV64)
