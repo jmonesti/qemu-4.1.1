@@ -35,3 +35,7 @@ config RISCV_VIRT
     select VIRTIO_MMIO
     select PCI_EXPRESS_GENERIC_BRIDGE
     select SIFIVE
+
+config RISCV_CUSTOM_SOC
+    bool
+    select HART

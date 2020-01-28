@@ -106,6 +106,13 @@ static void set_resetvec(CPURISCVState *env, int resetvec)
 #endif
 }
 
+static void set_mtvec(CPURISCVState *env, int mtvec)
+{
+#ifndef CONFIG_USER_ONLY
+    env->mtvec = mtvec;
+#endif
+}
+
 static void riscv_any_cpu_init(Object *obj)
 {
     CPURISCVState *env = &RISCV_CPU(obj)->env;
@@ -116,11 +123,37 @@ static void riscv_any_cpu_init(Object *obj)
 
 #if defined(TARGET_RISCV32)
 
+static void riscv_custom32_cpu_reset_ext(CPUState *cs)
+{
+    RISCVCPU *cpu = RISCV_CPU(cs);
+    CPURISCVState *env = &cpu->env;
+
+    /* hard-wired */
+    set_resetvec(env, 0x00000200);
+    set_mtvec(env, 0x000001c0);
+
+#ifndef CONFIG_USER_ONLY
+    env->pc = env->resetvec;
+#endif
+}
+
 static void riscv_base32_cpu_init(Object *obj)
 {
     CPURISCVState *env = &RISCV_CPU(obj)->env;
     /* We set this in the realise function */
     set_misa(env, 0);
+
+    env->cpu_reset_ext = NULL;
+}
+
+static void riscv_custom32_cpu_init(Object *obj)
+{
+    CPURISCVState *env = &RISCV_CPU(obj)->env;
+    set_misa(env, RV32 | RVI | RVM | RVC);
+    set_priv_version(env, PRIV_VERSION_1_10_0);
+    set_resetvec(env, 0x00000200);
+
+    env->cpu_reset_ext = riscv_custom32_cpu_reset_ext;
 }
 
 static void rv32gcsu_priv1_09_1_cpu_init(Object *obj)
@@ -131,6 +164,8 @@ static void rv32gcsu_priv1_09_1_cpu_init(Object *obj)
     set_resetvec(env, DEFAULT_RSTVEC);
     set_feature(env, RISCV_FEATURE_MMU);
     set_feature(env, RISCV_FEATURE_PMP);
+
+    env->cpu_reset_ext = NULL;
 }
 
 static void rv32gcsu_priv1_10_0_cpu_init(Object *obj)
@@ -141,6 +176,8 @@ static void rv32gcsu_priv1_10_0_cpu_init(Object *obj)
     set_resetvec(env, DEFAULT_RSTVEC);
     set_feature(env, RISCV_FEATURE_MMU);
     set_feature(env, RISCV_FEATURE_PMP);
+
+    env->cpu_reset_ext = NULL;
 }
 
 static void rv32imacu_nommu_cpu_init(Object *obj)
@@ -150,6 +187,8 @@ static void rv32imacu_nommu_cpu_init(Object *obj)
     set_priv_version(env, PRIV_VERSION_1_10_0);
     set_resetvec(env, DEFAULT_RSTVEC);
     set_feature(env, RISCV_FEATURE_PMP);
+
+    env->cpu_reset_ext = NULL;
 }
 
 #elif defined(TARGET_RISCV64)
@@ -159,6 +198,8 @@ static void riscv_base64_cpu_init(Object *obj)
     CPURISCVState *env = &RISCV_CPU(obj)->env;
     /* We set this in the realise function */
     set_misa(env, 0);
+
+    env->cpu_reset_ext = NULL;
 }
 
 static void rv64gcsu_priv1_09_1_cpu_init(Object *obj)
@@ -169,6 +210,8 @@ static void rv64gcsu_priv1_09_1_cpu_init(Object *obj)
     set_resetvec(env, DEFAULT_RSTVEC);
     set_feature(env, RISCV_FEATURE_MMU);
     set_feature(env, RISCV_FEATURE_PMP);
+
+    env->cpu_reset_ext = NULL;
 }
 
 static void rv64gcsu_priv1_10_0_cpu_init(Object *obj)
@@ -179,6 +222,8 @@ static void rv64gcsu_priv1_10_0_cpu_init(Object *obj)
     set_resetvec(env, DEFAULT_RSTVEC);
     set_feature(env, RISCV_FEATURE_MMU);
     set_feature(env, RISCV_FEATURE_PMP);
+
+    env->cpu_reset_ext = NULL;
 }
 
 static void rv64imacu_nommu_cpu_init(Object *obj)
@@ -188,6 +233,8 @@ static void rv64imacu_nommu_cpu_init(Object *obj)
     set_priv_version(env, PRIV_VERSION_1_10_0);
     set_resetvec(env, DEFAULT_RSTVEC);
     set_feature(env, RISCV_FEATURE_PMP);
+
+    env->cpu_reset_ext = NULL;
 }
 
 #endif
@@ -299,6 +346,10 @@ static void riscv_cpu_reset(CPUState *cs)
     cs->exception_index = EXCP_NONE;
     env->load_res = -1;
     set_default_nan_mode(1, &env->fp_status);
+
+    if (env->cpu_reset_ext) {
+        env->cpu_reset_ext(cs);
+    }
 }
 
 static void riscv_cpu_disas_set_info(CPUState *s, disassemble_info *info)
@@ -557,6 +608,7 @@ static const TypeInfo riscv_cpu_type_infos[] = {
     DEFINE_CPU(TYPE_RISCV_CPU_ANY,              riscv_any_cpu_init),
 #if defined(TARGET_RISCV32)
     DEFINE_CPU(TYPE_RISCV_CPU_BASE32,           riscv_base32_cpu_init),
+    DEFINE_CPU(TYPE_RISCV_CPU_CUSTOM32,         riscv_custom32_cpu_init),
     DEFINE_CPU(TYPE_RISCV_CPU_SIFIVE_E31,       rv32imacu_nommu_cpu_init),
     DEFINE_CPU(TYPE_RISCV_CPU_SIFIVE_U34,       rv32gcsu_priv1_10_0_cpu_init),
     /* Depreacted */

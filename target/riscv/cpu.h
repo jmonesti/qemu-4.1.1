@@ -35,6 +35,7 @@
 #define TYPE_RISCV_CPU_ANY              RISCV_CPU_TYPE_NAME("any")
 #define TYPE_RISCV_CPU_BASE32           RISCV_CPU_TYPE_NAME("rv32")
 #define TYPE_RISCV_CPU_BASE64           RISCV_CPU_TYPE_NAME("rv64")
+#define TYPE_RISCV_CPU_CUSTOM32         RISCV_CPU_TYPE_NAME("rv32-custom")
 #define TYPE_RISCV_CPU_SIFIVE_E31       RISCV_CPU_TYPE_NAME("sifive-e31")
 #define TYPE_RISCV_CPU_SIFIVE_E51       RISCV_CPU_TYPE_NAME("sifive-e51")
 #define TYPE_RISCV_CPU_SIFIVE_U34       RISCV_CPU_TYPE_NAME("sifive-u34")
@@ -168,6 +169,9 @@ struct CPURISCVState {
     /* True if in debugger mode.  */
     bool debugger;
 #endif
+
+    /* Extended CPU reset - Handle SoC-specific extras */
+    void (*cpu_reset_ext)(CPUState *);
 
     float_status fp_status;
 
