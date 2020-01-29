@@ -1,11 +1,11 @@
 /*
- * QEMU RISC-V Custom Board
+ * QEMU Finisher
  *
  * Copyright (c) 2020 Jean-Francois Monestier
  *
  * github@monestier.me
  *
- * Simple RISC-V machine with 16550a UART
+ * Terminate Execution
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,28 +20,22 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef HW_RISCV_CUSTOM_SOC_H
-#define HW_RISCV_CUSTOM_SOC_H
+#ifndef HW_RISCV_FINISHER_H
+#define HW_RISCV_FINISHER_H
 
-typedef struct {
+#define TYPE_FINISHER "riscv.finisher"
+
+#define FINISHER(obj) \
+    OBJECT_CHECK(FinisherState, (obj), TYPE_FINISHER)
+
+typedef struct FinisherState {
     /*< private >*/
     SysBusDevice parent_obj;
 
     /*< public >*/
-    RISCVHartArrayState soc;
-} RISCVCustomSOCState;
+    MemoryRegion mmio;
+} FinisherState;
 
-enum {
-    RV_CUSTOMSOC_RAM,
-
-    RV_CUSTOMSOC_UART0,
-    RV_CUSTOMSOC_FINISHER,
-};
-
-#if defined(TARGET_RISCV32)
-#define RV_CUSTOM_CPU TYPE_RISCV_CPU_CUSTOM32
-#elif defined(TARGET_RISCV64)
-#error Not supported - This custom SoC is 32b only - Please re-run "./configure --target-list=riscv32-softmmu"
-#endif
+DeviceState *riscv_finisher_create(hwaddr addr);
 
 #endif

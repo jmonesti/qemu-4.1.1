@@ -33,6 +33,7 @@
 #include "target/riscv/cpu.h"
 #include "hw/riscv/riscv_hart.h"
 #include "hw/riscv/custom-soc.h"
+#include "hw/riscv/custom-finisher.h"
 #include "hw/riscv/boot.h"
 #include "chardev/char.h"
 #include "exec/address-spaces.h"
@@ -41,7 +42,10 @@ static const struct MemmapEntry {
     hwaddr base;
     hwaddr size;
 } rv_customsoc_memmap[] = {
-    [RV_CUSTOMSOC_RAM]   = { 0x00000000,      0x400000 }, /*    4mb */
+    [RV_CUSTOMSOC_RAM]      = { 0x00000000,      0x400000 }, /*    4mb */
+
+    [RV_CUSTOMSOC_UART0]    = { 0xF0000000,             0 }, /* puts   */
+    [RV_CUSTOMSOC_FINISHER] = { 0xFFFFF000,             0 }, /* exit   */
 };
 
 static void riscv_custom_board_init(MachineState *machine)
@@ -76,6 +80,13 @@ static void riscv_custom_board_init(MachineState *machine)
 	    /* ignored */
         }
     }
+
+    /* MMIO */
+    riscv_finisher_create(memmap[RV_CUSTOMSOC_FINISHER].base);
+
+    serial_mm_init(system_memory, memmap[RV_CUSTOMSOC_UART0].base,
+        0, NULL, 399193,
+        serial_hd(0), DEVICE_LITTLE_ENDIAN);
 }
 
 static void riscv_custom_board_machine_init(MachineClass *mc)
